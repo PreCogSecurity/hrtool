@@ -1,0 +1,9 @@
+# Core runtime dependencies for hrtool
+# These are the packages imported by manager.py and other modules
+#
+# Pinning: PySide 1.2.x series compatible with the 2017-era codebase
+#          PyYAML for configuration file parsing
+#          python-debian for Debian package metadata (deb822)
+PySide>=1.2.0,<2.0.0
+PyYAML>=5.1,<6.0
+python-debian>=0.99,<1.0

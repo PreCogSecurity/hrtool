@@ -1,0 +1,17 @@
+# docker-compose.yml for hrtool
+# Brings up a development/running environment for hrtool with its dependencies.
+# hrtool is a HEAD Component Manager for the Hanson Robotics platform.
+# It requires: dpkg, python3, PySide2/PySide6, yaml, python-debian
+services:
+  hrtool:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - GITHUB_TOKEN
+    # The app runs as a GUI application; forwarding X11 or using noVNC is
+    # outside the scope of this minimal compose. See README for manual setup.
+    # This service is intended to provide the runtime environment (dpkg, python,
+    # required Python packages) so that `hr cmd ...` functions work correctly.
+    # To run the GUI: docker compose up hrtool and use with X11 forwarding,
+    # or run headless commands via `docker compose exec hrtool hr cmd ...`

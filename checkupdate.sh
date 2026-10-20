@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 log() {
     printf "$(date +'%Y-%m-%d %H:%M:%S') ${1}\n"
 }
 
 log "Starting"
 log "HOME=$HOME"
-if [[ -z $GITHUB_TOKEN && -e $HOME/.bashrc ]]; then
-    export GITHUB_TOKEN=$(cat $HOME/.bashrc|grep "GITHUB_TOKEN="|cut -d= -f2)
+
+# Read GITHUB_TOKEN from process environment only - do NOT parse ~/.bashrc
+# Formerly: if [[ -z $GITHUB_TOKEN && -e $HOME/.bashrc ]]; then
+#   export GITHUB_TOKEN=$(cat $HOME/.bashrc|grep "GITHUB_TOKEN="|cut -d= -f2)
+# fi
+# Now requires GITHUB_TOKEN to be set explicitly; fail clearly if missing
+if [[ -z "$GITHUB_TOKEN" ]]; then
+    echo 'GITHUB_TOKEN required - set it as a process environment variable, not in ~/.bashrc' >&2
+    exit 1
 fi
 while true; do
     sleep 1
