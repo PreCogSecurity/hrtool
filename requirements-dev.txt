@@ -1,0 +1,4 @@
+# Development dependencies for hrtool
+# Includes testing and linting tools for future use
+pytest>=7.0,<8.0
+flake8>=4.0,<5.0

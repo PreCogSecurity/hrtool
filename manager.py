@@ -1,9 +1,7 @@
 import os
 import logging
-import yaml
-import threading
 from PySide import QtCore, QtGui
-#from PyQt4 import QtCore, QtGui
+# from PyQt4 import QtCore, QtGui
 from ui.mainwindow import Ui_MainWindow
 import subprocess
 from debian import deb822
@@ -11,6 +9,7 @@ import gzip
 
 logger = logging.getLogger(__name__)
 CWD = os.path.abspath(os.path.dirname(__file__))
+
 
 class MainWindow(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -25,7 +24,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def list_components(self):
         components = subprocess.check_output(
-            'hr cmd list_components install'.split(' '))
+            ['hr', 'cmd', 'list_components', 'install'])
         components = components.splitlines()
         for component in ['head', 'head-deps', 'opencog', 'opencog-deps']:
             if component in components:
@@ -33,10 +32,14 @@ class MainWindow(QtGui.QMainWindow):
         self.components = components
 
     def list_installed_components(self):
-        installed_components = subprocess.check_output(
-            'hr cmd list_installed'.split(' '))
+        try:
+            installed_components = subprocess.check_output(
+                ['hr', 'cmd', 'list_installed'])
+        except subprocess.CalledProcessError as e:
+            logger.error('hr cmd list_installed failed: %s', e)
+            self.installed_components = []
+            return
         self.installed_components = installed_components.splitlines()
-
 
     def parse_packages(self):
         self.debs = {}
@@ -50,8 +53,13 @@ class MainWindow(QtGui.QMainWindow):
                 self.debs[name] = deb
 
     def get_installed_versions(self, components):
-        cmd = r"""dpkg-query -W -f='${Package} ${Status} ${Version}\n' """+' '.join(components)
-        versions = subprocess.check_output(cmd, shell=True).splitlines()
+        cmd = ['dpkg-query', '-W', '-f',
+               '${Package} ${Status} ${Version}\n'] + components
+        try:
+            versions = subprocess.check_output(cmd).splitlines()
+        except subprocess.CalledProcessError as e:
+            logger.error('dpkg-query failed: %s', e)
+            return {}
         installed_versions = {}
         for v in versions:
             if 'installed' in v:
@@ -61,34 +69,39 @@ class MainWindow(QtGui.QMainWindow):
         return installed_versions
 
     def update_table(self):
-        installed_versions = self.get_installed_versions(self.installed_components)
+        cw = self.ui.componentTableWidget
+        ic = self.installed_components
+        installed_versions = self.get_installed_versions(ic)
 
-        self.ui.componentTableWidget.setColumnCount(5)
-        self.ui.componentTableWidget.setRowCount(len(self.components))
-        self.ui.componentTableWidget.setColumnWidth(0, 30)
-        self.ui.componentTableWidget.setColumnWidth(1, 300)
-        self.ui.componentTableWidget.setColumnWidth(2, 120)
-        self.ui.componentTableWidget.setColumnWidth(3, 120)
-        self.ui.componentTableWidget.setHorizontalHeaderLabels(
-            ['S', 'Package', 'Installed Version', 'Latest Version', 'Description'])
+        cw.setColumnCount(5)
+        cw.setRowCount(len(self.components))
+        cw.setColumnWidth(0, 30)
+        cw.setColumnWidth(1, 300)
+        cw.setColumnWidth(2, 120)
+        cw.setColumnWidth(3, 120)
+        labels = ['S', 'Package', 'Installed Version',
+                  'Latest Version', 'Description']
+        cw.setHorizontalHeaderLabels(labels)
 
         for row, key in enumerate(self.components):
             status = QtGui.QTableWidgetItem()
-            if key in self.installed_components:
+            if key in ic:
                 status.setCheckState(QtCore.Qt.Checked)
             else:
                 status.setCheckState(QtCore.Qt.Unchecked)
-            self.ui.componentTableWidget.setItem(row, 0, status)
+            cw.setItem(row, 0, status)
             item = QtGui.QTableWidgetItem(key)
-            self.ui.componentTableWidget.setItem(row, 1, item)
+            cw.setItem(row, 1, item)
             if key in self.debs:
                 if key in installed_versions:
-                    installed_version = QtGui.QTableWidgetItem(installed_versions[key])
-                    self.ui.componentTableWidget.setItem(row, 2, installed_version)
+                    iversion = installed_versions[key]
+                    installed_version = QtGui.QTableWidgetItem(iversion)
+                    cw.setItem(row, 2, installed_version)
                 version = QtGui.QTableWidgetItem(self.debs[key]['Version'])
-                self.ui.componentTableWidget.setItem(row, 3, version)
+                cw.setItem(row, 3, version)
                 desc = QtGui.QTableWidgetItem(self.debs[key]['Description'])
-                self.ui.componentTableWidget.setItem(row, 4, desc)
+                cw.setItem(row, 4, desc)
+
 
 if __name__ == "__main__":
     import sys

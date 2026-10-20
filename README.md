@@ -95,3 +95,34 @@ Go to "System Settings" -> "Software & Updates" -> "Ubuntu Software". Then choos
 ## head-deps is not installed
 
 Uninstall nodejs if it's of version 0.10.x or older. HEAD requires nodejs to be 6.6.x or newer.
+
+# Development
+
+## Environment
+
+Copy `.env.example` and set `GITHUB_TOKEN` as a process environment variable:
+
+```bash
+cp .env.example .env
+# Edit .env and set your GITHUB_TOKEN
+export $(grep GITHUB_TOKEN .env)
+```
+
+## Docker
+
+This repository now includes a Dockerfile and docker-compose.yml for isolated execution:
+
+```bash
+docker compose up --build hrtool
+```
+
+To run headless hr commands:
+
+```bash
+docker compose exec hrtool hr cmd list_components install
+```
+
+## CI
+
+This project has a GitHub Actions CI pipeline that runs lint (flake8) and tests on every push.
+See `.github/workflows/ci.yml` for the configuration.
